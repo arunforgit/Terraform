@@ -1,0 +1,83 @@
+provider "aws" {
+     region = "ap-south-1"
+}
+
+# Creating VPC
+resource "aws_vpc" "digitup" {
+     cidr_block                         = "10.0.0.0/16"
+     instant_tenancy                    = "default"
+     enable_dns_support                 = "true" 
+     enable_dns_hostnames               =  "true"
+     tags = {
+         Name = "digitup"
+     }
+}
+
+# Creating Public Subnet in VPC
+resource "aws_subnet" "digitup-public-1" {
+      vpc_id                                 = aws_vpc.digitup.id
+      cidr_block                           = "10.0.1.0/24"
+      map_public_ip_on_launch  = "true"
+      availability_zone                 = "ap-south-1a"
+  
+      tags = {
+          Name = "digitup-public-1"
+       }
+}
+ 
+
+# Creating Private Subnet in VPC
+resource "aws_subnet" "digitup-public-1" {
+      vpc_id                                 = aws_vpc.digitup.id
+      cidr_block                           = "10.0.2.0/24"
+      map_private_ip_on_launch  = "false"
+      availability_zone                 = "ap-south-1b"
+
+      tags = {
+          Name = "digitup-private-1"
+       }
+}
+
+# Creating Internet Gateway 
+ 
+resource "aws_internet_gateway" "digitup-gw" {
+    vpc_id = aws_vpc.digitup.id
+
+    tags = {
+        Name = "digitup"
+    }
+}
+ 
+# Creating Route Tables for IG
+
+resource " aws_route_table" "digitup-public" {
+   vpc_id = aws_vpc.digitup.id
+   route {
+       cidr_block   = "0.0.0.0/0"
+       gateway_id = aws_internet_gateway.digitup-gw.id
+   }
+}
+ 
+   tags = {
+      Name = "digitup-public-1"
+   }
+}
+
+
+# Creating Route Associations public subnets
+resource "aws_route_table_association" "digitup-public-1-a" {
+    subnet_id               = aws_subnet.digitup-public-1.id
+    route_table_id        = aws_route_table.digitup-public.id
+}
+
+  
+# Creating EC2 instance in public subnet
+resource "aws_instance" "public_inst_1" {
+    ami                          =   "ami-xxxxxxxxxxxx"
+    instance_type          =   "m5.large"
+    subnet_id                =   "${aws_subnet.digitup-public-1.id}"
+    key_name                =   "keyxx"
+    tags                         =   {
+       Name                   = "public_inst_1"
+    }
+}
